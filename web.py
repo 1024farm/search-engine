@@ -21,7 +21,8 @@ with tab1:
         submitted = st.form_submit_button("Search")
         if submitted:
             documents = conn.query('SELECT * FROM documents WHERE content LIKE "%'
-                                   + keyword + '%" ORDER BY id desc LIMIT 10;',
+                                   + keyword.replace(" ", "%")
+                                   + '%" ORDER BY id desc LIMIT 10;',
                                    ttl=0)
             st.dataframe(documents)
 
