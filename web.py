@@ -15,14 +15,29 @@ tab1, tab2 = st.tabs(["Search", "Import"])
 
 with tab1:
     with st.form("search"):
-        keyword = st.text_input('keyword')
+        keywords = st.text_input('keywords')
 
         # Every form must have a submit button.
         submitted = st.form_submit_button("Search")
         if submitted:
-            documents = conn.query('SELECT * FROM documents WHERE content LIKE "%'
-                                   + keyword.replace(" ", "%")
-                                   + '%" ORDER BY id desc LIMIT 10;',
+            ids = []
+            with conn.session as s:
+                for keyword in keywords.split(" "):
+                    rows = s.execute(text('SELECT id FROM documents WHERE content LIKE "%'
+                                    + keyword
+                                    + '%" ORDER BY id desc LIMIT 10;')).fetchall()
+                    if len(rows) == 0:
+                        continue
+                    result_list = [row[0] for row in rows]
+                    if len(ids) == 0:
+                        ids = result_list
+                    else:
+                        ids = list(set(ids) & set(result_list))
+
+            if len(ids) == 0:
+                documents = []
+            else:
+                documents = conn.query('SELECT * FROM documents WHERE id IN (' + ','.join(map(str, ids)) + ');',
                                    ttl=0)
             st.dataframe(documents)
 
